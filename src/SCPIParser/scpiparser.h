@@ -8,6 +8,12 @@ typedef enum scpi_error_codes
 	SCPI_NO_CALLBACK		= -2
 } scpi_error_t;
 
+typedef enum scpi_command_location
+{
+	SCPI_CL_SAMELEVEL,
+	SCPI_CL_CHILD
+} scpi_command_location_t;
+
 struct scpi_token;
 struct scpi_parser_context;
 struct scpi_command;
@@ -48,7 +54,7 @@ struct scpi_token*
 scpi_parse_string(char* str, size_t length);
 
 struct scpi_command*
-scpi_register_command(struct scpi_command* parent,
+scpi_register_command(struct scpi_command* parent, scpi_command_location_t location,
 						char* long_name,  size_t long_name_length,
 						char* short_name, size_t short_name_length,
 						command_callback_t callback);
@@ -59,5 +65,14 @@ scpi_find_command(struct scpi_command* root,
 					
 scpi_error_t
 scpi_execute_command(struct scpi_command* root, char* command_string, size_t length);
+
+void
+scpi_free_tokens(struct scpi_token* start);
+
+void
+scpi_free_some_tokens(struct scpi_token* start, struct scpi_token* end);
+
+float
+scpi_parse_numeric(char* str, size_t length);
 
 #endif

@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "scpiparser.h"
 
@@ -82,7 +83,7 @@ scpi_parse_string(char* str, size_t length)
 }
 
 struct scpi_command*
-scpi_register_command(struct scpi_command* parent,
+scpi_register_command(struct scpi_command* parent, scpi_command_location_t location,
 						char* long_name,  size_t long_name_length,
 						char* short_name, size_t short_name_length,
 						command_callback_t callback)
@@ -90,7 +91,15 @@ scpi_register_command(struct scpi_command* parent,
 	
 	struct scpi_command* current_command;
 	
-	current_command = parent->children;
+	if(location == SCPI_CL_CHILD)
+	{
+		current_command = parent->children;
+	}
+	else
+	{
+		current_command = parent;
+	}
+	
 	if(current_command == NULL)
 	{
 		parent->children = (struct scpi_command*)malloc(sizeof(struct scpi_command));
@@ -135,10 +144,9 @@ scpi_find_command(struct scpi_command* root,
 	while(current_token != NULL && current_token->type == 0)
 	{
 	
+		int found_token = 0;
 		while(current_command != NULL)
 		{
-			int found_token = 0;
-			
 			
 			if((current_token->length == current_command->long_name_length
 					&& !memcmp(current_token->value, current_command->long_name, current_token->length))
@@ -163,11 +171,11 @@ scpi_find_command(struct scpi_command* root,
 			{
 				current_command = current_command->next;
 			}
-			
-			if(!found_token)
-			{
-				return NULL;
-			}
+		}
+		
+		if(!found_token)
+		{
+			return NULL;
 		}
 	}
 	
@@ -193,5 +201,189 @@ scpi_execute_command(struct scpi_command* root, char* command_string, size_t len
 		return SCPI_NO_CALLBACK;
 	}
 	
+	
 	return command->callback(parsed_command);
+}
+
+void
+scpi_free_some_tokens(struct scpi_token* start, struct scpi_token* end)
+{
+	struct scpi_token* prev;
+	while(start != NULL && start != end)
+	{
+		prev = start;
+		start = start->next;
+		
+		free((void*)prev);
+	}
+}
+
+void
+scpi_free_tokens(struct scpi_token* start)
+{
+	scpi_free_some_tokens(start, NULL);
+}
+
+float
+scpi_parse_numeric(char* str, size_t length)
+{
+	int i;
+	long mantissa;
+	int state;
+	int sign;
+	int point_position;
+	int exponent;
+	int exponent_sign;
+	long exponent_multiplier;
+	float value;
+	
+	exponent = 0;
+	exponent_sign = 0;
+	point_position = 0;
+	sign = 0;
+	state = 0;
+	mantissa = 0;
+	exponent_multiplier = 1;
+
+	for(i = 0; i < length; i++)
+	{
+		if(state == 0)
+		{
+			/* Remove leading whitespace */
+			
+			if(isspace(str[i]))
+			{
+				continue;
+			}
+			else if(str[i] == '+' || str[i] == '-')
+			{
+				/* We have hit a +/- */
+				state = 1;
+			}
+			else if(isdigit(str[i]))
+			{
+				/* We have reached the number itself. */
+				state = 2;
+			}
+			else
+			{
+				state = -1;
+				continue;
+			}
+		}
+		
+		if(state == 1)
+		{
+			/* Set the sign. */
+			if(str[i] == '+')
+			{
+				sign = 0;
+			}
+			else
+			{
+				sign = 1;
+			}
+			
+			state = 2;
+			continue;
+		}
+		
+		if(state == 2 || state == 3)
+		{
+			if(isdigit(str[i]))
+			{
+				/* Start accumulating digits. */
+				mantissa = (10*mantissa) + (long)(str[i] - 0x30);
+				
+				if(state == 3)
+				{
+					/* We are past the decimal point, so reposition it. */
+					point_position++;
+				}
+			}
+			else if(str[i] == '.')
+			{
+				state = 3;
+				continue;
+			}
+			else if(str[i] == 'e')
+			{
+				state = 4;
+				continue;
+			}
+			else
+			{
+				state = -1;
+			}
+		}
+		
+		if(state == 4)
+		{
+			/* We are now looking at the exponent sign. */
+			if(str[i] == '+' || str[i] == '-')
+			{
+				if(str[i] == '-')
+				{
+					exponent_sign = 1;
+				}
+			}
+			else if(isdigit(str[i]))
+			{
+				state = 5;
+			}
+			else
+			{
+				state = -1;
+			}
+		}
+		
+		if(state == 5)
+		{
+			
+			if(isdigit(str[i]))
+			{
+				exponent = (exponent*10) + (int)(str[i] - 0x30);
+				continue;
+			}
+			else
+			{
+				state = -1;
+			}
+		}
+	}
+	
+	value = (float)mantissa;
+	
+	if(exponent_sign != 0)
+	{
+		exponent = -exponent;
+	}
+	
+	exponent -= point_position;
+	if(exponent > 0)
+	{
+		for(i = 0; i < exponent; i++)
+		{
+			exponent_multiplier *= 10;
+		}
+		
+		value *= exponent_multiplier;
+	}
+	else
+	{
+		for(i = exponent; i < 0; i++)
+		{
+			exponent_multiplier *= 10;
+		}
+		
+		value /= exponent_multiplier;
+	}
+	
+	if(sign != 0)
+	{
+		value = -value;
+	}
+	
+	
+	return value;
 }
