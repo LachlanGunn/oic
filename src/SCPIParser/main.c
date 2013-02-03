@@ -6,6 +6,13 @@
 float voltage;
 int   voltage_on;
 
+scpi_error_t identify(struct scpi_token* command)
+{
+	printf("OIC,0.1,SCPI Test,0\n");
+	scpi_free_tokens(command);
+	return SCPI_SUCCESS;
+}
+
 scpi_error_t measure_callback(struct scpi_token* command)
 {
 	printf("%e\n", voltage_on ? voltage : 0.0f);
@@ -33,7 +40,7 @@ scpi_error_t set_voltage(struct scpi_token* command)
 		voltage = scpi_parse_numeric(args->value, args->length);
 	}
 	
-	scpi_free_tokens(args);
+	scpi_free_tokens(command);
 	
 	return SCPI_SUCCESS;
 }
@@ -70,12 +77,15 @@ scpi_error_t set_output(struct scpi_token* command)
 		
 	}
 	
+	scpi_free_tokens(command);
+	
 	return SCPI_SUCCESS;
 }
 
 scpi_error_t get_output(struct scpi_token* command)
 {
 	printf("%d\n", voltage_on);
+	scpi_free_tokens(command);
 	return SCPI_SUCCESS;
 }
 
@@ -145,6 +155,8 @@ int main(int argc, char** argv)
 	
 	measure = &command_tree;
 	
+	scpi_register_command(measure, SCPI_CL_SAMELEVEL, "*IDN?", 5, "*IDN?", 5, identify);
+	
 	scpi_register_command(measure, SCPI_CL_CHILD, "VOLTAGE?", 8, "VOLT?", 5, measure_callback);
 	scpi_register_command(measure, SCPI_CL_CHILD, "FREQUENCY?", 10, "FREQ?", 5, NULL);
 	
@@ -160,9 +172,7 @@ int main(int argc, char** argv)
 	
 	putchar('\n');
 	
-	/*
-	printf("\n\nExecuting MEASURE:VOLTAGE?\n");
-	*/
+	execute_command(&command_tree, "*IDN?");
 	execute_command(&command_tree, "MEASURE:VOLTAGE?");
 	execute_command(&command_tree, "SOURCE:VOLTAGE -16.5e-3");
 	execute_command(&command_tree, "MEASURE:VOLTAGE?");
