@@ -6,14 +6,14 @@
 float voltage;
 int   voltage_on;
 
-scpi_error_t identify(struct scpi_token* command)
+scpi_error_t identify(struct scpi_parser_context* ctx, struct scpi_token* command)
 {
 	printf("OIC,0.1,SCPI Test,0\n");
 	scpi_free_tokens(command);
 	return SCPI_SUCCESS;
 }
 
-scpi_error_t measure_callback(struct scpi_token* command)
+scpi_error_t measure_callback(struct scpi_parser_context* ctx, struct scpi_token* command)
 {
 	printf("%e\n", voltage_on ? voltage : 0.0f);
 	scpi_free_tokens(command);
@@ -21,7 +21,7 @@ scpi_error_t measure_callback(struct scpi_token* command)
 	return SCPI_SUCCESS;
 }
 
-scpi_error_t set_voltage(struct scpi_token* command)
+scpi_error_t set_voltage(struct scpi_parser_context* ctx, struct scpi_token* command)
 {
 	struct scpi_token* args;
 	
@@ -45,7 +45,7 @@ scpi_error_t set_voltage(struct scpi_token* command)
 	return SCPI_SUCCESS;
 }
 
-scpi_error_t set_output(struct scpi_token* command)
+scpi_error_t set_output(struct scpi_parser_context* ctx, struct scpi_token* command)
 {
 	struct scpi_token* args;
 	
@@ -82,7 +82,7 @@ scpi_error_t set_output(struct scpi_token* command)
 	return SCPI_SUCCESS;
 }
 
-scpi_error_t get_output(struct scpi_token* command)
+scpi_error_t get_output(struct scpi_parser_context* ctx, struct scpi_token* command)
 {
 	printf("%d\n", voltage_on);
 	scpi_free_tokens(command);
@@ -94,11 +94,24 @@ void status_message(char* str)
 	printf("[ %s ]\n", str);
 }
 
-void execute_command(struct scpi_command* root, char* str)
+void execute_command(struct scpi_parser_context* ctx, char* str)
 {
+	scpi_error_t error;
+	
 	printf(">> %s\n", str);
-	scpi_execute_command(root, str, strlen(str));
+	error = scpi_execute_command(ctx, str, strlen(str));
 	putchar('\n');
+	if(error == SCPI_COMMAND_NOT_FOUND)
+	{
+		struct scpi_error notfound_error;
+		notfound_error.id = -100;
+		notfound_error.description = "Command error;Command not found";
+		notfound_error.length = strlen(notfound_error.description);
+		
+		scpi_queue_error(ctx, notfound_error);
+		
+		printf("<< Command not found.\n");
+	}
 	/*
 	printf("<< Error code: %d\n", scpi_execute_command(root, str, strlen(str)));
 	*/
@@ -110,12 +123,16 @@ void print_command_tree(struct scpi_command* list, int tabs)
 	{
 		int i;
 		
-		for(i = 0; i < tabs; i++)
+		if(list->long_name != NULL)
 		{
-			putchar('\t');
+			for(i = 0; i < tabs; i++)
+			{
+				putchar('\t');
+			}
+			
+			fwrite(list->long_name, 1, list->long_name_length, stdout);
+			putchar('\n');
 		}
-		fwrite(list->long_name, 1, list->long_name_length, stdout);
-		putchar('\n');
 		print_command_tree(list->children, tabs+1);
 		
 		list = list->next;
@@ -124,15 +141,17 @@ void print_command_tree(struct scpi_command* list, int tabs)
 
 void print_single_command(struct scpi_command* list)
 {
-	fwrite(list->long_name, 1, list->long_name_length, stdout);
-	putchar('\n');
+	if(list->long_name != NULL)
+	{
+		fwrite(list->long_name, 1, list->long_name_length, stdout);
+		putchar('\n');
+	}
 	print_command_tree(list->children, 1);
 }
 
 int main(int argc, char** argv)
 {
-	
-	struct scpi_command command_tree;
+	struct scpi_parser_context ctx;
 	struct scpi_command* measure;
 	struct scpi_command* source;
 	struct scpi_command* output;
@@ -140,22 +159,14 @@ int main(int argc, char** argv)
 	voltage = 0;
 	voltage_on = 0;
 	
+	scpi_init(&ctx);
+	measure = scpi_register_command(ctx.command_tree, SCPI_CL_CHILD,
+										"MEASURE", 7, "MEAS", 4, NULL);
+	
 	printf("\nAssembling command tree:\n\n");
 	
-	command_tree.next = NULL;
-	command_tree.children = NULL;
+	scpi_register_command(ctx.command_tree, SCPI_CL_SAMELEVEL, "*IDN?", 5, "*IDN?", 5, identify);
 	
-	command_tree.long_name = "MEASURE";
-	command_tree.long_name_length = 7;
-	
-	command_tree.short_name = "MEAS";
-	command_tree.short_name_length = 4;
-	
-	command_tree.callback = NULL;
-	
-	measure = &command_tree;
-	
-	scpi_register_command(measure, SCPI_CL_SAMELEVEL, "*IDN?", 5, "*IDN?", 5, identify);
 	
 	scpi_register_command(measure, SCPI_CL_CHILD, "VOLTAGE?", 8, "VOLT?", 5, measure_callback);
 	scpi_register_command(measure, SCPI_CL_CHILD, "FREQUENCY?", 10, "FREQ?", 5, NULL);
@@ -168,19 +179,25 @@ int main(int argc, char** argv)
 	scpi_register_command(output, SCPI_CL_CHILD, "STATE", 5, "STAT", 4, set_output);
 	scpi_register_command(output, SCPI_CL_CHILD, "STATE?", 6, "STAT?", 5, get_output);
 	
-	print_command_tree(&command_tree, 0);
+	print_command_tree(ctx.command_tree, 0);
 	
 	putchar('\n');
 	
-	execute_command(&command_tree, "*IDN?");
-	execute_command(&command_tree, "MEASURE:VOLTAGE?");
-	execute_command(&command_tree, "SOURCE:VOLTAGE -16.5e-3");
-	execute_command(&command_tree, "MEASURE:VOLTAGE?");
-	execute_command(&command_tree, "OUTPUT ON");
-	execute_command(&command_tree, "MEASURE:VOLTAGE?");
-	execute_command(&command_tree, "OUTPUT:STATE?");
-	execute_command(&command_tree, "OUTPUT:STATE OFF");
-	execute_command(&command_tree, "OUTPUT?");
+	execute_command(&ctx, "*IDN?");
+	execute_command(&ctx, ":MEASURE:VOLTAGE?");
+	execute_command(&ctx, ":SOURCE:VOLTAGE -16.5e-3");
+	execute_command(&ctx, ":MEASURE:VOLTAGE?");
+	execute_command(&ctx, ":OUTPUT ON");
+	execute_command(&ctx, ":MEASURE:VOLTAGE?");
+	execute_command(&ctx, ":OUTPUT:STATE?");
+	execute_command(&ctx, ":OUTPUT:STATE OFF");
+	execute_command(&ctx, ":OUTPUT?");
+	execute_command(&ctx, ":SYSTEM:ERROR?");
+	execute_command(&ctx, ":CAUSE:AN:ERROR");
+	execute_command(&ctx, ":CAUSE:ANOTHER:ERROR");
+	execute_command(&ctx, ":SYSTEM:ERROR?");
+	execute_command(&ctx, ":SYSTEM:ERROR?");
+	execute_command(&ctx, ":SYSTEM:ERROR?");
 	
 	return 0;
 }

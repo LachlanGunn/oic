@@ -17,8 +17,9 @@ typedef enum scpi_command_location
 struct scpi_token;
 struct scpi_parser_context;
 struct scpi_command;
+struct scpi_error;
 
-typedef scpi_error_t(*command_callback_t)(struct scpi_token*);
+typedef scpi_error_t(*command_callback_t)(struct scpi_parser_context*,struct scpi_token*);
 
 struct scpi_token
 {
@@ -30,9 +31,20 @@ struct scpi_token
 	struct scpi_token*	next;
 };
 
+struct scpi_error
+{
+	int id;
+	char* description;
+	size_t length;
+	
+	struct scpi_error* next;
+};
+
 struct scpi_parser_context
 {
-	struct scpi_token* head;
+	struct scpi_command* command_tree;
+	struct scpi_error*   error_queue_head;
+	struct scpi_error*   error_queue_tail;
 };
 
 struct scpi_command
@@ -49,6 +61,8 @@ struct scpi_command
 	command_callback_t callback;
 };
 
+void
+scpi_init(struct scpi_parser_context* ctx);
 
 struct scpi_token*
 scpi_parse_string(char* str, size_t length);
@@ -60,11 +74,11 @@ scpi_register_command(struct scpi_command* parent, scpi_command_location_t locat
 						command_callback_t callback);
 						
 struct scpi_command*
-scpi_find_command(struct scpi_command* root,
+scpi_find_command(struct scpi_parser_context* ctx,
 					struct scpi_token* parsed_string);
 					
 scpi_error_t
-scpi_execute_command(struct scpi_command* root, char* command_string, size_t length);
+scpi_execute_command(struct scpi_parser_context* ctx, char* command_string, size_t length);
 
 void
 scpi_free_tokens(struct scpi_token* start);
@@ -74,5 +88,11 @@ scpi_free_some_tokens(struct scpi_token* start, struct scpi_token* end);
 
 float
 scpi_parse_numeric(char* str, size_t length);
+
+void
+scpi_queue_error(struct scpi_parser_context* ctx, struct scpi_error error);
+
+struct scpi_error*
+scpi_pop_error(struct scpi_parser_context* ctx);
 
 #endif
