@@ -61,6 +61,13 @@ struct scpi_command
 	command_callback_t callback;
 };
 
+struct scpi_numeric
+{
+	float  value;
+	char*  unit;
+	size_t length;
+};
+
 void
 scpi_init(struct scpi_parser_context* ctx);
 
@@ -86,7 +93,7 @@ scpi_free_tokens(struct scpi_token* start);
 void
 scpi_free_some_tokens(struct scpi_token* start, struct scpi_token* end);
 
-float
+struct scpi_numeric
 scpi_parse_numeric(char* str, size_t length);
 
 void

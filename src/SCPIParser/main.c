@@ -37,7 +37,7 @@ scpi_error_t set_voltage(struct scpi_parser_context* ctx, struct scpi_token* com
 	}
 	else
 	{
-		voltage = scpi_parse_numeric(args->value, args->length);
+		voltage = scpi_parse_numeric(args->value, args->length).value;
 	}
 	
 	scpi_free_tokens(command);
@@ -72,7 +72,7 @@ scpi_error_t set_output(struct scpi_parser_context* ctx, struct scpi_token* comm
 		}
 		else
 		{
-			voltage_on = (int)(0.5+scpi_parse_numeric(args->value, args->length)) ? 1 : 0;
+			voltage_on = (int)(0.5+scpi_parse_numeric(args->value, args->length).value) ? 1 : 0;
 		}
 		
 	}
@@ -185,12 +185,12 @@ int main(int argc, char** argv)
 	
 	execute_command(&ctx, "*IDN?");
 	execute_command(&ctx, ":MEASURE:VOLTAGE?");
-	execute_command(&ctx, ":SOURCE:VOLTAGE -16.5e-3");
+	execute_command(&ctx, ":SOURCE:VOLTAGE 15kV");
 	execute_command(&ctx, ":MEASURE:VOLTAGE?");
-	execute_command(&ctx, ":OUTPUT ON");
+	execute_command(&ctx, ":OUTPUT:STATE  ON");
 	execute_command(&ctx, ":MEASURE:VOLTAGE?");
 	execute_command(&ctx, ":OUTPUT:STATE?");
-	execute_command(&ctx, ":OUTPUT:STATE OFF");
+	execute_command(&ctx, ":OUTPUT OFF");
 	execute_command(&ctx, ":OUTPUT?");
 	execute_command(&ctx, ":SYSTEM:ERROR?");
 	execute_command(&ctx, ":CAUSE:AN:ERROR");

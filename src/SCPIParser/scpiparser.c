@@ -106,8 +106,14 @@ scpi_parse_string(char* str, size_t length)
 		}
 	}
 	
+	token_start = -1;
 	for(i++; i < length; i++)
 	{
+		if(token_start == -1 && !isspace(str[i]))
+		{
+			token_start = i;
+		}
+		
 		if(str[i] == ',' || i == length-1)
 		{
 			struct scpi_token* new_tail;
@@ -124,8 +130,8 @@ scpi_parse_string(char* str, size_t length)
 			
 			tail->next = new_tail;
 			tail = new_tail;
-
-			token_start = i+1;
+			
+			token_start = -1;
 		}
 	}
 	
@@ -276,7 +282,7 @@ scpi_free_tokens(struct scpi_token* start)
 	scpi_free_some_tokens(start, NULL);
 }
 
-float
+struct scpi_numeric
 scpi_parse_numeric(char* str, size_t length)
 {
 	int i;
@@ -288,6 +294,9 @@ scpi_parse_numeric(char* str, size_t length)
 	int exponent_sign;
 	long exponent_multiplier;
 	float value;
+	char* unit_start;
+	char* unit_end;
+	struct scpi_numeric retval;
 	
 	exponent = 0;
 	exponent_sign = 0;
@@ -296,6 +305,8 @@ scpi_parse_numeric(char* str, size_t length)
 	state = 0;
 	mantissa = 0;
 	exponent_multiplier = 1;
+	unit_start = NULL;
+	unit_end = NULL;
 
 	for(i = 0; i < length; i++)
 	{
@@ -365,7 +376,7 @@ scpi_parse_numeric(char* str, size_t length)
 			}
 			else
 			{
-				state = -1;
+				state = 6;
 			}
 		}
 		
@@ -399,6 +410,118 @@ scpi_parse_numeric(char* str, size_t length)
 			}
 			else
 			{
+				state = 6;
+			}
+		}
+		
+		if(state == 6)
+		{
+		
+			/* Remove spaces between the number and its units. */
+			if(isspace(str[i]))
+			{
+				continue;
+			}
+			else
+			{
+				state = 7;
+			}
+		
+		}
+		
+		if(state == 7)
+		{
+			/* The unit itself---first the multiplier. */
+			switch(str[i])
+			{
+				case 'y':
+					exponent -= 24;
+					break;
+				case 'z':
+					exponent -= 21;
+					break;
+				case 'a':
+					exponent -= 18;
+					break;
+				case 'f':
+					exponent -= 15;
+					break;
+				case 'p':
+					exponent -= 12;
+					break;
+				case 'n':
+					exponent -= 9;
+					break;
+				case 'u':
+					exponent -= 6;
+					break;
+				case 'm':
+					exponent -= 3;
+					break;
+				case 'c':
+					exponent -= 2;
+					break;
+				case 'd':
+					exponent -= 1;
+					break;
+				case 'D':
+					exponent += 1;
+					break;
+				case 'C':
+					exponent += 2;
+					break;
+				case 'k':
+					exponent += 3;
+					break;
+				case 'M':
+					exponent += 6;
+					break;
+				case 'G':
+					exponent += 9;
+					break;
+				case 'T':
+					exponent += 12;
+					break;
+				case 'P':
+					exponent += 15;
+					break;
+				case 'E':
+					exponent += 18;
+					break;
+				case 'Z':
+					exponent += 21;
+					break;
+				case 'Y':
+					exponent += 24;
+					break;
+				
+				default:
+				
+					if(isupper(str[i]))
+					{
+						state = 8;
+					}
+					else
+					{
+						state = -1;
+					}
+			}
+		}
+		
+		if(state == 8)
+		{
+			/* The unit proper. */
+			if(isupper(str[i]))
+			{
+				if(unit_start == NULL)
+				{
+					unit_start = str+i;
+				}
+			}
+			else
+			{
+				unit_end = str+i-1;
+			
 				state = -1;
 			}
 		}
@@ -436,8 +559,12 @@ scpi_parse_numeric(char* str, size_t length)
 		value = -value;
 	}
 	
+	retval.value  = value;
+	retval.unit   = unit_start;
+	retval.length = unit_end - unit_start;
 	
-	return value;
+	
+	return retval;
 }
 
 void
