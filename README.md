@@ -17,7 +17,7 @@ development may begin.  This release shall provide a virtual instrument
 platform for the Arduino Uno.
 
 Communication shall be via the virtual serial port provided by the device,
-which shall provide a fully conformant implementation of SCPI.
+which shall provide a bare-bones implementation of SCPI.
 
 In addition to the basic platform, this release will include two virtual
 instruments:
@@ -29,8 +29,8 @@ instruments:
 
 ### 0.1 (In development) ###
 
-Release 0.1 is a prototype of the SCPI implementation, and will implement
-contain a fully conforming implementation of SCPI-99 on the PC.
+Release 0.1 is a prototype of the SCPI implementation, and will
+an implementation of SCPI-99 on the PC.
 
 ### 0.2 (Planned) ###
 
@@ -42,9 +42,8 @@ instrument and an accompanying Python script to perform the read operation.
 
 The 0.3 release will provide complete implementations of the Digital Meter
 and RF Source classes as described by the SCPI implementation, along with
-the host-side software necessary to operate them.
-
-TODO: Do we neeed a GUI?
+the host-side software necessary to operate them from either a GUI or a
+Python shell.
 
 ### 1.0 (Planned) ###
 
