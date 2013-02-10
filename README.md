@@ -92,12 +92,12 @@ instruments:
 * An implementation of the RF and Microwave Source class using the Sparkfun
 	AD9835 breakout board.
 
-### 0.1 (In development) ###
+### 0.1 (Completed) ###
 
 Release 0.1 is a prototype of the SCPI implementation, and will
 an implementation of SCPI-99 on the PC.
 
-### 0.2 (Planned) ###
+### 0.2 (In Development) ###
 
 Release 0.2 contains an embedded version of the SCPI implementation.  This
 is to demonstrated with a simple implementation of the digital meter
