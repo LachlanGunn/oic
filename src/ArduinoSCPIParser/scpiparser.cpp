@@ -14,7 +14,6 @@
   
 #endif
 
-
 static scpi_error_t
 system_error(struct scpi_parser_context* ctx, struct scpi_token* command)
 {
@@ -447,64 +446,104 @@ scpi_parse_numeric(char* str, size_t length)
 			{
 				case 'y':
 					exponent -= 24;
+                                        state = 8;
+                                        continue;
 					break;
 				case 'z':
 					exponent -= 21;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'a':
 					exponent -= 18;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'f':
 					exponent -= 15;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'p':
 					exponent -= 12;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'n':
 					exponent -= 9;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'u':
 					exponent -= 6;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'm':
 					exponent -= 3;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'c':
 					exponent -= 2;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'd':
 					exponent -= 1;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'D':
 					exponent += 1;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'C':
 					exponent += 2;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'k':
 					exponent += 3;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'M':
 					exponent += 6;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'G':
 					exponent += 9;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'T':
 					exponent += 12;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'P':
 					exponent += 15;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'E':
 					exponent += 18;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'Z':
 					exponent += 21;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'Y':
 					exponent += 24;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				
 				default:
 				
@@ -515,8 +554,10 @@ scpi_parse_numeric(char* str, size_t length)
 					else
 					{
 						state = -1;
+                                                continue;
 					}
 			}
+
 		}
 		
 		if(state == 8)
@@ -531,14 +572,21 @@ scpi_parse_numeric(char* str, size_t length)
 			}
 			else
 			{
-				unit_end = str+i-1;
+                                if(unit_start != NULL)
+                                {
+				        unit_end = str+i-1;
+                                }
+                                else
+                                {
+                                        unit_end = NULL;
+                                }
 			
 				state = -1;
 			}
 		}
 	}
 
-        if(unit_end == NULL)
+        if(unit_start != NULL && unit_end == NULL)
         {
           unit_end = str+length-1;
         }
