@@ -10,71 +10,24 @@ Initial development is for PC, and not much effort has been spent on
 efficiency.  Data structures are all dynamically-allocated linked lists,
 unsuitable for platforms with constrained resources.
 
-The system will be based upon SCPI, compliant wherever possible.  Adherence to
-the requirements specified in IEEE 488.2 is not initially planned, as this
-standard is not available to the author.
+The system will be based upon SCPI.  Adherence to the requirements specified
+in IEEE 488.2 is not initially planned, as this standard is not available
+to the author.
 
-An example session from the current release:
+## Getting Started ##
 
-	Assembling command tree:
+We have developed a simple DAQ interface using an Arduino board, with the
+ability to both read (using the in-built ADC) and write (using PWM) voltages.
 
-		SYSTEM
-			ERROR
-				NEXT?
-			ERROR?
-		MEASURE
-			VOLTAGE?
-			FREQUENCY?
-		SOURCE
-			VOLTAGE
-		OUTPUT
-			STATE
-			STATE?
-		OUTPUT?
-	*IDN?
-
-	>> *IDN?
-	OIC,0.1,SCPI Test,0
-
-	>> :MEASURE:VOLTAGE?
-	0.000000e+000
-
-	>> :SOURCE:VOLTAGE 15kV
-
-	>> :MEASURE:VOLTAGE?
-	0.000000e+000
-
-	>> :OUTPUT:STATE  ON
-
-	>> :MEASURE:VOLTAGE?
-	1.500000e+004
-
-	>> :OUTPUT:STATE?
-	1
-
-	>> :OUTPUT OFF
-
-	>> :OUTPUT?
-	0
-
-	>> :SYSTEM:ERROR?
-	0,"No error"
-
-	>> :CAUSE:AN:ERROR
-
-	<< Command not found.
-	>> :CAUSE:ANOTHER:ERROR
-
-	<< Command not found.
-	>> :SYSTEM:ERROR?
-	-100,"Command error;Command not found"
-
-	>> :SYSTEM:ERROR?
-	-100,"Command error;Command not found"
-
-	>> :SYSTEM:ERROR?
-	0,"No error"
-
+1. Copy the src/ArduinoSCPIParser directory to your Arduino library directory.
+	In my case, this was C:\Users\Lachlan\Arduino\libraries\ .
+2. Open the sketch src/Examples/Meter/Meter.ino
+3. Upload it to your Arduino board.
+4. Use the serial monitor to talk to the board.  Some example commands
+	* *IDN? (print some version information)
+	* :SOURCE:VOLTAGE 1V (set the PWM on pin three to output 1V)
+	* :MEASURE:VOLTAGE? (read the voltage on analogue input zero)
+	
 ## Version 1 (In development) ##
 
 The first version of OIC will provide a basic platform upon which further
@@ -97,13 +50,13 @@ instruments:
 Release 0.1 is a prototype of the SCPI implementation, and will
 an implementation of SCPI-99 on the PC.
 
-### 0.2 (In Development) ###
+### 0.2 (Completed) ###
 
 Release 0.2 contains an embedded version of the SCPI implementation.  This
 is to demonstrated with a simple implementation of the digital meter
 instrument and an accompanying Python script to perform the read operation.
 
-### 0.3 (Planned) ###
+### 0.3 (In Development) ###
 
 The 0.3 release will provide complete implementations of the Digital Meter
 and RF Source classes as described by the SCPI implementation, along with
