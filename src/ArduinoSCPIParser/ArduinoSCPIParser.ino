@@ -3,6 +3,74 @@
 
 struct scpi_parser_context ctx;
 
+scpi_error_t identify(struct scpi_parser_context* context, struct scpi_token* command);
+scpi_error_t get_voltage(struct scpi_parser_context* context, struct scpi_token* command);
+scpi_error_t get_voltage_2(struct scpi_parser_context* context, struct scpi_token* command);
+scpi_error_t get_voltage_3(struct scpi_parser_context* context, struct scpi_token* command);
+scpi_error_t set_voltage(struct scpi_parser_context* context, struct scpi_token* command);
+scpi_error_t set_voltage_2(struct scpi_parser_context* context, struct scpi_token* command);
+
+void setup()
+{
+  struct scpi_command* source;
+  struct scpi_command* measure;
+
+  /* First, initialise the parser. */
+  scpi_init(&ctx);
+
+  /*
+   * After initialising the parser, we set up the command tree.  Ours is
+   *
+   *  *IDN?         -> identify
+   *  :SOURCE
+   *    :VOLTage    -> set_voltage
+   *    :VOLTage1   -> set_voltage_2
+   *  :MEASure
+   *    :VOLTage?   -> get_voltage
+   *    :VOLTage1?  -> get_voltage_2
+   *    :VOLTage2?  -> get_voltage_3
+   */
+  scpi_register_command(ctx.command_tree, SCPI_CL_SAMELEVEL, "*IDN?", 5, "*IDN?", 5, identify);
+
+  source = scpi_register_command(ctx.command_tree, SCPI_CL_CHILD, "SOURCE", 6, "SOUR", 4, NULL);
+  measure = scpi_register_command(ctx.command_tree, SCPI_CL_CHILD, "MEASURE", 7, "MEAS", 4, NULL);
+
+  scpi_register_command(source, SCPI_CL_CHILD, "VOLTAGE", 7, "VOLT", 4, set_voltage);
+  scpi_register_command(source, SCPI_CL_CHILD, "VOLTAGE1", 8, "VOLT1", 5, set_voltage_2);
+
+  scpi_register_command(measure, SCPI_CL_CHILD, "VOLTAGE?", 8, "VOLT?", 5, get_voltage);
+  scpi_register_command(measure, SCPI_CL_CHILD, "VOLTAGE1?", 9, "VOLT1?", 6, get_voltage_2);
+  scpi_register_command(measure, SCPI_CL_CHILD, "VOLTAGE2?", 9, "VOLT2?", 6, get_voltage_3);
+
+  /*
+   * Next, we set our outputs to some default value.
+   */
+  analogWrite(3, 0);
+  analogWrite(5, 0);
+
+  Serial.begin(9600);
+}
+
+void loop()
+{
+  char line_buffer[256];
+  unsigned char read_length;
+
+  while(1)
+  {
+    /* Read in a line and execute it. */
+    read_length = Serial.readBytesUntil('\n', line_buffer, 256);
+    if(read_length > 0)
+    {
+      scpi_execute_command(&ctx, line_buffer, read_length);
+    }
+  }
+}
+
+
+/*
+ * Respond to *IDN?
+ */
 scpi_error_t identify(struct scpi_parser_context* context, struct scpi_token* command)
 {
   scpi_free_tokens(command);
@@ -11,6 +79,9 @@ scpi_error_t identify(struct scpi_parser_context* context, struct scpi_token* co
   return SCPI_SUCCESS;
 }
 
+/**
+ * Read the voltage on A0.
+ */
 scpi_error_t get_voltage(struct scpi_parser_context* context, struct scpi_token* command)
 {
   float voltage;
@@ -22,6 +93,9 @@ scpi_error_t get_voltage(struct scpi_parser_context* context, struct scpi_token*
   return SCPI_SUCCESS;
 }
 
+/**
+ * Read the voltage on A1.
+ */
 scpi_error_t get_voltage_2(struct scpi_parser_context* context, struct scpi_token* command)
 {
   float voltage;
@@ -33,6 +107,9 @@ scpi_error_t get_voltage_2(struct scpi_parser_context* context, struct scpi_toke
   return SCPI_SUCCESS;
 }
 
+/**
+ * Read the voltage on A2.
+ */
 scpi_error_t get_voltage_3(struct scpi_parser_context* context, struct scpi_token* command)
 {
   float voltage;
@@ -44,6 +121,9 @@ scpi_error_t get_voltage_3(struct scpi_parser_context* context, struct scpi_toke
   return SCPI_SUCCESS;
 }
 
+/**
+ * Set the voltage using PWM on pin 3.
+ */
 scpi_error_t set_voltage(struct scpi_parser_context* context, struct scpi_token* command)
 {
   struct scpi_token* args;
@@ -88,6 +168,9 @@ scpi_error_t set_voltage(struct scpi_parser_context* context, struct scpi_token*
   return SCPI_SUCCESS;
 }
 
+/**
+ * Set the voltage using PWM on pin 5.
+ */
 scpi_error_t set_voltage_2(struct scpi_parser_context* context, struct scpi_token* command)
 {
   struct scpi_token* args;
@@ -131,45 +214,4 @@ scpi_error_t set_voltage_2(struct scpi_parser_context* context, struct scpi_toke
 
   return SCPI_SUCCESS;
 }
-
-void setup()
-{
-  struct scpi_command* source;
-  struct scpi_command* measure;
-
-  scpi_init(&ctx);
-
-  scpi_register_command(ctx.command_tree, SCPI_CL_SAMELEVEL, "*IDN?", 5, "*IDN?", 5, identify);
-
-  source = scpi_register_command(ctx.command_tree, SCPI_CL_CHILD, "SOURCE", 6, "SOUR", 4, NULL);
-  measure = scpi_register_command(ctx.command_tree, SCPI_CL_CHILD, "MEASURE", 7, "MEAS", 4, NULL);
-
-  scpi_register_command(source, SCPI_CL_CHILD, "VOLTAGE", 7, "VOLT", 4, set_voltage);
-  scpi_register_command(source, SCPI_CL_CHILD, "VOLTAGE1", 8, "VOLT1", 5, set_voltage_2);
-
-  scpi_register_command(measure, SCPI_CL_CHILD, "VOLTAGE?", 8, "VOLT?", 5, get_voltage);
-  scpi_register_command(measure, SCPI_CL_CHILD, "VOLTAGE1?", 9, "VOLT1?", 6, get_voltage_2);
-  scpi_register_command(measure, SCPI_CL_CHILD, "VOLTAGE2?", 9, "VOLT2?", 6, get_voltage_3);
-
-  analogWrite(3, 0);
-
-  Serial.begin(9600);
-}
-
-void loop()
-{
-  char line_buffer[256];
-  unsigned char read_length;
-
-  while(1)
-  {
-    read_length = Serial.readBytesUntil('\n', line_buffer, 256);
-    if(read_length > 0)
-    {
-      scpi_execute_command(&ctx, line_buffer, read_length);
-    }
-  }
-}
-
-
 
