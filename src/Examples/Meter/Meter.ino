@@ -1,4 +1,4 @@
-#include "scpiparser.h"
+#include <scpiparser.h>
 #include <Arduino.h>
 
 struct scpi_parser_context ctx;

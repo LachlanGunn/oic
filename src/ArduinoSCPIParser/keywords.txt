@@ -1,0 +1,18 @@
+scpi_error_t				KEYWORD1
+scpi_command_location_t		KEYWORD1
+scpi_token					KEYWORD1
+scpi_parser_context			KEYWORD1
+scpi_command				KEYWORD1
+scpi_error					KEYWORD1
+command_callback_t			KEYWORD1
+
+scpi_init					KEYWORD2
+scpi_parse_string			KEYWORD2
+scpi_register_command		KEYWORD2
+scpi_find_command			KEYWORD2
+scpi_execute_command		KEYWORD2
+scpi_free_tokens			KEYWORD2
+scpi_free_some_tokens		KEYWORD2
+scpi_parse_numeric			KEYWORD2
+scpi_queue_error			KEYWORD2
+scpi_pop_error				KEYWORD2
