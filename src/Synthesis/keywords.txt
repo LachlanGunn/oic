@@ -1,0 +1,11 @@
+AD9835				KEYWORD1
+enable				KEYWORD2
+disable				KEYWORD2
+setFrequencyCode		KEYWORD2
+setFrequencyHz			KEYWORD2
+selectFrequencyRegister		KEYWORD2
+calculateFrequencyCodeHz	KEYWORD2
+setPhaseCode			KEYWORD2
+setPhaseDeg			KEYWORD2
+selectPhaseRegister		KEYWORD2
+calculatePhaseCodeDeg		KEYWORD2

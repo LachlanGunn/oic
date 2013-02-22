@@ -622,7 +622,7 @@ scpi_parse_numeric(char* str, size_t length, float default_value, float min_valu
 			{
                                 if(unit_start != NULL)
                                 {
-				        unit_end = str+i-1;
+				        unit_end = str+i;
                                 }
                                 else
                                 {
