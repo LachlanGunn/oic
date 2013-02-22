@@ -293,7 +293,7 @@ scpi_free_tokens(struct scpi_token* start)
 }
 
 struct scpi_numeric
-scpi_parse_numeric(char* str, size_t length)
+scpi_parse_numeric(char* str, size_t length, float default_value, float min_value, float max_value)
 {
 	int i;
 	long mantissa;
@@ -322,12 +322,38 @@ scpi_parse_numeric(char* str, size_t length)
 	{
 		if(state == 0)
 		{
-			/* Remove leading whitespace */
-			
+			/* Remove leading whitespace */			
 			if(isspace(str[i]))
 			{
 				continue;
 			}
+                        else if(length-i >= 7 && str[i]   == 'D' && str[i+1] == 'E' && str[i+2] == 'F'
+                                              && str[i+3] == 'A' && str[i+4] == 'U' && str[i+5] == 'L'
+                                              && str[i+6] == 'T')
+                        {
+                                /* The user has asked for the default value. */
+                                retval.value = default_value;
+                                retval.unit = NULL;
+                                retval.length = 0;
+                                
+                                return retval;
+                        }
+                        else if(length-i >= 3 && str[i] == 'M' && str[i+1] == 'A' && str[i+2] == 'X')
+                        {
+                                /* The user has asked for the maximum value. */
+                                retval.value = max_value;
+                                retval.unit = NULL;
+                                retval.length = 0;
+                                return retval;
+                        }
+                        else if(length-i >= 3 && str[i] == 'M' && str[i+1] == 'I' && str[i+2] == 'N')
+                        {
+                                /* The user has asked for the minimum value. */
+                                retval.value = min_value;
+                                retval.unit = NULL;
+                                retval.length = 0;
+                                return retval;
+                        }
 			else if(str[i] == '+' || str[i] == '-')
 			{
 				/* We have hit a +/- */

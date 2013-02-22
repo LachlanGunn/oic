@@ -185,18 +185,21 @@ scpi_free_some_tokens(struct scpi_token* start, struct scpi_token* end);
  * The scpi_parse_numeric function parses a decimal numeric string as
  * per the SCPI specification, including units.  When a unit is
  * specified, the SI prefix will be incorporated into the numeric
- * value.
+ * value.  Default, maximum, and minimum values will also be handled.
  *
  * For example, 0.1mV => value: 1e-4, unit: V
  *
  * @param str		The string to parse.
  * @param length	The length of the string to parse.
+ * @param min_value     The value of MIN.
+ * @param max_value     The value of MAX.
+ * @param default_value The value of DEFAULT.
  *
  * @return A structure containing the numeric data.  The unit field
  *			points into the original string.
  */
 struct scpi_numeric
-scpi_parse_numeric(char* str, size_t length);
+scpi_parse_numeric(char* str, size_t length, float default_value, float min_value, float max_value);
 
 /**
  * Add an error to the queue.

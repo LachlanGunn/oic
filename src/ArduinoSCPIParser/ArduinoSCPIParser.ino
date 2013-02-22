@@ -137,7 +137,7 @@ scpi_error_t set_voltage(struct scpi_parser_context* context, struct scpi_token*
     args = args->next;
   }
 
-  output_numeric = scpi_parse_numeric(args->value, args->length);
+  output_numeric = scpi_parse_numeric(args->value, args->length, 0, 0, 5);
   if(output_numeric.length == 0 ||
     (output_numeric.length == 1 && output_numeric.unit[0] == 'V'))
   {
@@ -184,7 +184,7 @@ scpi_error_t set_voltage_2(struct scpi_parser_context* context, struct scpi_toke
     args = args->next;
   }
 
-  output_numeric = scpi_parse_numeric(args->value, args->length);
+  output_numeric = scpi_parse_numeric(args->value, args->length, 0, 0, 5);
   if(output_numeric.length == 0 ||
     (output_numeric.length == 1 && output_numeric.unit[0] == 'V'))
   {
