@@ -44,6 +44,8 @@ void setup()
   source = scpi_register_command(ctx.command_tree, SCPI_CL_CHILD, "SOURCE", 6, "SOUR", 4, NULL);
   scpi_register_command(source, SCPI_CL_CHILD, "FREQUENCY", 9, "FREQ", 4, set_frequency);
   scpi_register_command(source, SCPI_CL_CHILD, "FREQUENCY?", 10, "FREQ?", 5, get_frequency);
+  
+  frequency = 1e3;
 
   Serial.begin(9600);
   dds.begin();
@@ -54,7 +56,8 @@ void loop()
   char line_buffer[256];
   unsigned char read_length;
   
-  dds.setFrequencyHz(0, 1000000);
+  dds.setFrequencyHz(0, 1000);
+  
   dds.selectFrequencyRegister(0);
   
   dds.enable();
@@ -111,11 +114,12 @@ scpi_error_t set_frequency(struct scpi_parser_context* context, struct scpi_toke
     args = args->next;
   }
 
-  output_numeric = scpi_parse_numeric(args->value, args->length, 0, 0, 25e6);
+  output_numeric = scpi_parse_numeric(args->value, args->length, 1e3, 0, 25e6);
   if(output_numeric.length == 0 ||
     (output_numeric.length == 2 && output_numeric.unit[0] == 'H' && output_numeric.unit[1] == 'Z'))
   {
     dds.setFrequencyHz(0, (unsigned long)constrain(output_numeric.value, 0, 25e6));
+    frequency = (unsigned long)constrain(output_numeric.value, 0, 25e6);
   }
   else
   {
@@ -124,8 +128,6 @@ scpi_error_t set_frequency(struct scpi_parser_context* context, struct scpi_toke
     error.description = "Command error;Invalid unit";
     error.length = 26;
     
-    Serial.println(output_numeric.length);
-
     scpi_queue_error(&ctx, error);
     scpi_free_tokens(command);
     return SCPI_SUCCESS;
