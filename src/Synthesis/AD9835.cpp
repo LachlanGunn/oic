@@ -311,4 +311,5 @@ void AD9835::writeSPI(byte msb, byte lsb)
 
     // Reassert FSYNC now that the transfer is complete.
     digitalWrite(pinFSYNC, HIGH);
+	digitalWrite(pinSCLK, HIGH);
 }
