@@ -673,7 +673,15 @@ scpi_parse_numeric(char* str, size_t length, float default_value, float min_valu
 	
 	retval.value  = value;
 	retval.unit   = unit_start;
-	retval.length = unit_end - unit_start + 1;
+	
+	if(unit_start == NULL)
+	{
+		retval.length = 0;
+	}
+	else
+	{
+		retval.length = unit_end - unit_start + 1;
+	}
 	
 	
 	return retval;
