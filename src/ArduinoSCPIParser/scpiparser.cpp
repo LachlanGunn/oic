@@ -318,7 +318,7 @@ struct scpi_numeric
 scpi_parse_numeric(char* str, size_t length, float default_value, float min_value, float max_value)
 {
 	int i;
-	long mantissa;
+	float mantissa;
 	int state;
 	int sign;
 	int point_position;
@@ -414,7 +414,7 @@ scpi_parse_numeric(char* str, size_t length, float default_value, float min_valu
 			if(isdigit(str[i]))
 			{
 				/* Start accumulating digits. */
-				mantissa = (10*mantissa) + (long)(str[i] - 0x30);
+				mantissa = (10*mantissa) + (float)(str[i] - 0x30);
 				
 				if(state == 3)
 				{
