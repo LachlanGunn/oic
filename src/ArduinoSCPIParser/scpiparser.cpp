@@ -611,12 +611,13 @@ scpi_parse_numeric(char* str, size_t length, float default_value, float min_valu
 		if(state == 8)
 		{
 			/* The unit proper. */
-			if(isupper(str[i]))
+			if(isalpha(str[i]))
 			{
 				if(unit_start == NULL)
 				{
 					unit_start = str+i;
 				}
+				state = 9;
 			}
 			else
 			{

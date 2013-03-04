@@ -116,7 +116,7 @@ scpi_error_t set_frequency(struct scpi_parser_context* context, struct scpi_toke
 
   output_numeric = scpi_parse_numeric(args->value, args->length, 1e3, 0, 25e6);
   if(output_numeric.length == 0 ||
-    (output_numeric.length == 2 && output_numeric.unit[0] == 'H' && output_numeric.unit[1] == 'Z'))
+    (output_numeric.length == 2 && output_numeric.unit[0] == 'H' && output_numeric.unit[1] == 'z'))
   {
     dds.setFrequencyHz(0, (unsigned long)constrain(output_numeric.value, 0, 25e6));
     frequency = (unsigned long)constrain(output_numeric.value, 0, 25e6);
