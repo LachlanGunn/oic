@@ -85,7 +85,8 @@ class Form(QDialog):
 		
 	def updateFrequency(self):
 		newFrequency = float(self.frequencyEdit.text())
-				self.instrument.write((':SOURCE:FREQUENCY %f' % newFrequency))
+		
+		self.instrument.write((':SOURCE:FREQUENCY %f' % newFrequency))
 		self.readFrequency()
 		self.frequencyEdit.setText('')
 		
