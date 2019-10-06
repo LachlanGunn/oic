@@ -87,7 +87,7 @@ scpi_init(struct scpi_parser_context* ctx)
 }
 
 struct scpi_token*
-scpi_parse_string(char* str, size_t length)
+scpi_parse_string(const char* str, size_t length)
 {
 	int i;
 	
@@ -171,8 +171,8 @@ scpi_parse_string(char* str, size_t length)
 
 struct scpi_command*
 scpi_register_command(struct scpi_command* parent, scpi_command_location_t location,
-						char* long_name,  size_t long_name_length,
-						char* short_name, size_t short_name_length,
+						const char* long_name,  size_t long_name_length,
+						const char* short_name, size_t short_name_length,
 						command_callback_t callback)
 {
 	
@@ -219,10 +219,10 @@ scpi_register_command(struct scpi_command* parent, scpi_command_location_t locat
 
 struct scpi_command*
 scpi_find_command(struct scpi_parser_context* ctx,
-					struct scpi_token* parsed_string)
+					const struct scpi_token* parsed_string)
 {
 	struct scpi_command* root;
-	struct scpi_token* current_token;
+	const struct scpi_token* current_token;
 	struct scpi_command* current_command;
 	
 	root = ctx->command_tree;
@@ -272,7 +272,7 @@ scpi_find_command(struct scpi_parser_context* ctx,
 }
 
 scpi_error_t
-scpi_execute_command(struct scpi_parser_context* ctx, char* command_string, size_t length)
+scpi_execute_command(struct scpi_parser_context* ctx, const char* command_string, size_t length)
 {
 	struct scpi_command* command;
 	struct scpi_token* parsed_command;
@@ -314,7 +314,7 @@ scpi_free_tokens(struct scpi_token* start)
 }
 
 struct scpi_numeric
-scpi_parse_numeric(char* str, size_t length, float default_value, float min_value, float max_value)
+scpi_parse_numeric(const char* str, size_t length, float default_value, float min_value, float max_value)
 {
 	int i;
 	float mantissa;
@@ -325,8 +325,8 @@ scpi_parse_numeric(char* str, size_t length, float default_value, float min_valu
 	int exponent_sign;
 	long exponent_multiplier;
 	float value;
-	char* unit_start;
-	char* unit_end;
+	const char* unit_start;
+	const char* unit_end;
 	struct scpi_numeric retval;
 	
 	exponent = 0;
@@ -733,7 +733,7 @@ scpi_pop_error(struct scpi_parser_context* ctx)
 		ctx->error_queue_head = retval->next;
 		
 		if(ctx->error_queue_head == NULL)
-		{
+{
 			ctx->error_queue_tail = NULL;
 		}
 		
