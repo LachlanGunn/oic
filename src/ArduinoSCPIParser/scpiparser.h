@@ -55,7 +55,7 @@ struct scpi_token
 {
 	unsigned char		type;
 	
-	char*				value;
+	const char*			value;
 	size_t				length;
 	
 	struct scpi_token*	next;
@@ -64,7 +64,7 @@ struct scpi_token
 struct scpi_error
 {
 	int id;
-	char* description;
+	const char* description;
 	size_t length;
 	
 	struct scpi_error* next;
@@ -79,10 +79,10 @@ struct scpi_parser_context
 
 struct scpi_command
 {
-	char*	long_name;
+	const char*	long_name;
 	size_t	long_name_length;
 	
-	char*	short_name;
+	const char*	short_name;
 	size_t	short_name_length;
 
 	struct scpi_command* next;
@@ -94,7 +94,7 @@ struct scpi_command
 struct scpi_numeric
 {
 	float  value;
-	char*  unit;
+	const char*  unit;
 	size_t length;
 };
 
@@ -115,7 +115,7 @@ scpi_init(struct scpi_parser_context* ctx);
  * @return A linked list of tokens, pointing into the original string.
  */
 struct scpi_token*
-scpi_parse_string(char* str, size_t length);
+scpi_parse_string(const char* str, size_t length);
 
 /**
  * Add a command to a tree.
@@ -155,8 +155,8 @@ scpi_parse_string(char* str, size_t length);
  */
 struct scpi_command*
 scpi_register_command(struct scpi_command* parent, scpi_command_location_t location,
-						char* long_name,  size_t long_name_length,
-						char* short_name, size_t short_name_length,
+						const char* long_name,  size_t long_name_length,
+						const char* short_name, size_t short_name_length,
 						command_callback_t callback);
 						
 /**
@@ -169,7 +169,7 @@ scpi_register_command(struct scpi_command* parent, scpi_command_location_t locat
  */
 struct scpi_command*
 scpi_find_command(struct scpi_parser_context* ctx,
-					struct scpi_token* parsed_string);
+					const struct scpi_token* parsed_string);
 
 					
 /**
@@ -182,7 +182,7 @@ scpi_find_command(struct scpi_parser_context* ctx,
  * @return An error code.
  */
 scpi_error_t
-scpi_execute_command(struct scpi_parser_context* ctx, char* command_string, size_t length);
+scpi_execute_command(struct scpi_parser_context* ctx, const char* command_string, size_t length);
 
 /**
  * Free a token list.
@@ -221,7 +221,7 @@ scpi_free_some_tokens(struct scpi_token* start, struct scpi_token* end);
  *			points into the original string.
  */
 struct scpi_numeric
-scpi_parse_numeric(char* str, size_t length, float default_value, float min_value, float max_value);
+scpi_parse_numeric(const char* str, size_t length, float default_value, float min_value, float max_value);
 
 /**
  * Add an error to the queue.
