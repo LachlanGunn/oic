@@ -1,18 +1,48 @@
+/*
+Copyright (c) 2013 Lachlan Gunn
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+ */
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <climits>
+#include <cassert>
 
 #include "scpiparser.h"
+
+
+#ifdef __cplusplus
+
+  extern "C" {
+
+#endif
 
 static scpi_error_t
 system_error(struct scpi_parser_context* ctx, struct scpi_token* command)
 {
 	struct scpi_error* error = scpi_pop_error(ctx);
-	
-	printf("%d,\"", error->id);
-	fwrite(error->description, 1, error->length, stdout);
-	printf("\"\n");
+
+  assert(error->length <= INT_MAX);
+	printf("%d,\"%*s\"n", error->id, (int)error->length, error->description);
 
 	scpi_free_tokens(command);
 	return SCPI_SUCCESS;
@@ -56,9 +86,9 @@ scpi_init(struct scpi_parser_context* ctx)
 }
 
 struct scpi_token*
-scpi_parse_string(char* str, size_t length)
+scpi_parse_string(const char* str, size_t length)
 {
-	int i;
+	size_t i;
 	
 	struct scpi_token* head;
 	struct scpi_token* tail;
@@ -140,8 +170,8 @@ scpi_parse_string(char* str, size_t length)
 
 struct scpi_command*
 scpi_register_command(struct scpi_command* parent, scpi_command_location_t location,
-						char* long_name,  size_t long_name_length,
-						char* short_name, size_t short_name_length,
+						const char* long_name,  size_t long_name_length,
+						const char* short_name, size_t short_name_length,
 						command_callback_t callback)
 {
 	
@@ -188,10 +218,10 @@ scpi_register_command(struct scpi_command* parent, scpi_command_location_t locat
 
 struct scpi_command*
 scpi_find_command(struct scpi_parser_context* ctx,
-					struct scpi_token* parsed_string)
+					const struct scpi_token* parsed_string)
 {
 	struct scpi_command* root;
-	struct scpi_token* current_token;
+	const struct scpi_token* current_token;
 	struct scpi_command* current_command;
 	
 	root = ctx->command_tree;
@@ -241,7 +271,7 @@ scpi_find_command(struct scpi_parser_context* ctx,
 }
 
 scpi_error_t
-scpi_execute_command(struct scpi_parser_context* ctx, char* command_string, size_t length)
+scpi_execute_command(struct scpi_parser_context* ctx, const char* command_string, size_t length)
 {
 	struct scpi_command* command;
 	struct scpi_token* parsed_command;
@@ -283,10 +313,11 @@ scpi_free_tokens(struct scpi_token* start)
 }
 
 struct scpi_numeric
-scpi_parse_numeric(char* str, size_t length)
+scpi_parse_numeric(const char* str, size_t length, float default_value, float min_value, float max_value)
 {
-	int i;
-	long mantissa;
+	size_t i;
+  int j;
+	float mantissa;
 	int state;
 	int sign;
 	int point_position;
@@ -294,8 +325,8 @@ scpi_parse_numeric(char* str, size_t length)
 	int exponent_sign;
 	long exponent_multiplier;
 	float value;
-	char* unit_start;
-	char* unit_end;
+	const char* unit_start;
+	const char* unit_end;
 	struct scpi_numeric retval;
 	
 	exponent = 0;
@@ -312,12 +343,38 @@ scpi_parse_numeric(char* str, size_t length)
 	{
 		if(state == 0)
 		{
-			/* Remove leading whitespace */
-			
+			/* Remove leading whitespace */			
 			if(isspace(str[i]))
 			{
 				continue;
 			}
+                        else if(length-i >= 7 && str[i]   == 'D' && str[i+1] == 'E' && str[i+2] == 'F'
+                                              && str[i+3] == 'A' && str[i+4] == 'U' && str[i+5] == 'L'
+                                              && str[i+6] == 'T')
+                        {
+                                /* The user has asked for the default value. */
+                                retval.value = default_value;
+                                retval.unit = NULL;
+                                retval.length = 0;
+                                
+                                return retval;
+                        }
+                        else if(length-i >= 3 && str[i] == 'M' && str[i+1] == 'A' && str[i+2] == 'X')
+                        {
+                                /* The user has asked for the maximum value. */
+                                retval.value = max_value;
+                                retval.unit = NULL;
+                                retval.length = 0;
+                                return retval;
+                        }
+                        else if(length-i >= 3 && str[i] == 'M' && str[i+1] == 'I' && str[i+2] == 'N')
+                        {
+                                /* The user has asked for the minimum value. */
+                                retval.value = min_value;
+                                retval.unit = NULL;
+                                retval.length = 0;
+                                return retval;
+                        }
 			else if(str[i] == '+' || str[i] == '-')
 			{
 				/* We have hit a +/- */
@@ -356,7 +413,7 @@ scpi_parse_numeric(char* str, size_t length)
 			if(isdigit(str[i]))
 			{
 				/* Start accumulating digits. */
-				mantissa = (10*mantissa) + (long)(str[i] - 0x30);
+				mantissa = (10*mantissa) + (float)(str[i] - 0x30);
 				
 				if(state == 3)
 				{
@@ -436,64 +493,104 @@ scpi_parse_numeric(char* str, size_t length)
 			{
 				case 'y':
 					exponent -= 24;
+                                        state = 8;
+                                        continue;
 					break;
 				case 'z':
 					exponent -= 21;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'a':
 					exponent -= 18;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'f':
 					exponent -= 15;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'p':
 					exponent -= 12;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'n':
 					exponent -= 9;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'u':
 					exponent -= 6;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'm':
 					exponent -= 3;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'c':
 					exponent -= 2;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'd':
 					exponent -= 1;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'D':
 					exponent += 1;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'C':
 					exponent += 2;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'k':
 					exponent += 3;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'M':
 					exponent += 6;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'G':
 					exponent += 9;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'T':
 					exponent += 12;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'P':
 					exponent += 15;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'E':
 					exponent += 18;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'Z':
 					exponent += 21;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				case 'Y':
 					exponent += 24;
-					break;
+					state = 8;
+                                        continue;
+                                        break;
 				
 				default:
 				
@@ -504,28 +601,43 @@ scpi_parse_numeric(char* str, size_t length)
 					else
 					{
 						state = -1;
+                                                continue;
 					}
 			}
+
 		}
 		
 		if(state == 8)
 		{
 			/* The unit proper. */
-			if(isupper(str[i]))
+			if(isalpha(str[i]))
 			{
 				if(unit_start == NULL)
 				{
 					unit_start = str+i;
 				}
+				state = 9;
 			}
 			else
 			{
-				unit_end = str+i-1;
+                                if(unit_start != NULL)
+                                {
+				        unit_end = str+i;
+                                }
+                                else
+                                {
+                                        unit_end = NULL;
+                                }
 			
 				state = -1;
 			}
 		}
 	}
+
+        if(unit_start != NULL && unit_end == NULL)
+        {
+          unit_end = str+length-1;
+        }
 	
 	value = (float)mantissa;
 	
@@ -537,7 +649,7 @@ scpi_parse_numeric(char* str, size_t length)
 	exponent -= point_position;
 	if(exponent > 0)
 	{
-		for(i = 0; i < exponent; i++)
+		for(j = 0; j < exponent; j++)
 		{
 			exponent_multiplier *= 10;
 		}
@@ -546,7 +658,7 @@ scpi_parse_numeric(char* str, size_t length)
 	}
 	else
 	{
-		for(i = exponent; i < 0; i++)
+		for(j = exponent; j < 0; i++)
 		{
 			exponent_multiplier *= 10;
 		}
@@ -561,7 +673,15 @@ scpi_parse_numeric(char* str, size_t length)
 	
 	retval.value  = value;
 	retval.unit   = unit_start;
-	retval.length = unit_end - unit_start;
+	
+	if(unit_start == NULL)
+	{
+		retval.length = 0;
+	}
+	else
+	{
+		retval.length = unit_end - unit_start + 1;
+	}
 	
 	
 	return retval;
@@ -613,10 +733,17 @@ scpi_pop_error(struct scpi_parser_context* ctx)
 		ctx->error_queue_head = retval->next;
 		
 		if(ctx->error_queue_head == NULL)
-		{
+{
 			ctx->error_queue_tail = NULL;
 		}
 		
 		return retval;
 	}
 }
+
+#ifdef __cplusplus
+
+  }
+  
+#endif
+

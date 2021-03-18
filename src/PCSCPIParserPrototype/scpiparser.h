@@ -1,5 +1,33 @@
+/*
+Copyright (c) 2013 Lachlan Gunn
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+ */
+
 #ifndef __SCPIPARSER_H
 #define __SCPIPARSER_H
+
+#ifdef __cplusplus
+
+  extern "C" {
+  
+#endif
 
 typedef enum scpi_error_codes
 {
@@ -25,7 +53,7 @@ struct scpi_token
 {
 	unsigned char		type;
 	
-	char*				value;
+	const char*			value;
 	size_t				length;
 	
 	struct scpi_token*	next;
@@ -34,7 +62,7 @@ struct scpi_token
 struct scpi_error
 {
 	int id;
-	char* description;
+	const char* description;
 	size_t length;
 	
 	struct scpi_error* next;
@@ -49,10 +77,10 @@ struct scpi_parser_context
 
 struct scpi_command
 {
-	char*	long_name;
+	const char*	long_name;
 	size_t	long_name_length;
 	
-	char*	short_name;
+	const char*	short_name;
 	size_t	short_name_length;
 
 	struct scpi_command* next;
@@ -64,7 +92,7 @@ struct scpi_command
 struct scpi_numeric
 {
 	float  value;
-	char*  unit;
+	const char*  unit;
 	size_t length;
 };
 
@@ -85,7 +113,7 @@ scpi_init(struct scpi_parser_context* ctx);
  * @return A linked list of tokens, pointing into the original string.
  */
 struct scpi_token*
-scpi_parse_string(char* str, size_t length);
+scpi_parse_string(const char* str, size_t length);
 
 /**
  * Add a command to a tree.
@@ -125,8 +153,8 @@ scpi_parse_string(char* str, size_t length);
  */
 struct scpi_command*
 scpi_register_command(struct scpi_command* parent, scpi_command_location_t location,
-						char* long_name,  size_t long_name_length,
-						char* short_name, size_t short_name_length,
+						const char* long_name,  size_t long_name_length,
+						const char* short_name, size_t short_name_length,
 						command_callback_t callback);
 						
 /**
@@ -139,7 +167,7 @@ scpi_register_command(struct scpi_command* parent, scpi_command_location_t locat
  */
 struct scpi_command*
 scpi_find_command(struct scpi_parser_context* ctx,
-					struct scpi_token* parsed_string);
+					const struct scpi_token* parsed_string);
 
 					
 /**
@@ -152,7 +180,7 @@ scpi_find_command(struct scpi_parser_context* ctx,
  * @return An error code.
  */
 scpi_error_t
-scpi_execute_command(struct scpi_parser_context* ctx, char* command_string, size_t length);
+scpi_execute_command(struct scpi_parser_context* ctx, const char* command_string, size_t length);
 
 /**
  * Free a token list.
@@ -177,18 +205,21 @@ scpi_free_some_tokens(struct scpi_token* start, struct scpi_token* end);
  * The scpi_parse_numeric function parses a decimal numeric string as
  * per the SCPI specification, including units.  When a unit is
  * specified, the SI prefix will be incorporated into the numeric
- * value.
+ * value.  Default, maximum, and minimum values will also be handled.
  *
  * For example, 0.1mV => value: 1e-4, unit: V
  *
  * @param str		The string to parse.
  * @param length	The length of the string to parse.
+ * @param min_value     The value of MIN.
+ * @param max_value     The value of MAX.
+ * @param default_value The value of DEFAULT.
  *
  * @return A structure containing the numeric data.  The unit field
  *			points into the original string.
  */
 struct scpi_numeric
-scpi_parse_numeric(char* str, size_t length);
+scpi_parse_numeric(const char* str, size_t length, float default_value, float min_value, float max_value);
 
 /**
  * Add an error to the queue.
@@ -208,5 +239,9 @@ scpi_queue_error(struct scpi_parser_context* ctx, struct scpi_error error);
  */
 struct scpi_error*
 scpi_pop_error(struct scpi_parser_context* ctx);
+
+#ifdef __cplusplus
+  }
+#endif
 
 #endif

@@ -37,7 +37,7 @@ scpi_error_t set_voltage(struct scpi_parser_context* ctx, struct scpi_token* com
 	}
 	else
 	{
-		voltage = scpi_parse_numeric(args->value, args->length).value;
+		voltage = scpi_parse_numeric(args->value, args->length, 0.0f, 0.0f,1.0e5f).value;
 	}
 	
 	scpi_free_tokens(command);
@@ -72,7 +72,7 @@ scpi_error_t set_output(struct scpi_parser_context* ctx, struct scpi_token* comm
 		}
 		else
 		{
-			voltage_on = (int)(0.5+scpi_parse_numeric(args->value, args->length).value) ? 1 : 0;
+			voltage_on = (int)(0.5+scpi_parse_numeric(args->value, args->length, 0.0f, 0.0f, 1.0f).value) ? 1 : 0;
 		}
 		
 	}
